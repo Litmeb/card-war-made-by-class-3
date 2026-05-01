@@ -1,6 +1,16 @@
 class AI {
     play(game, who) {
         const cards = [...CARD_TYPES];
+
+        // If in dying state, must use Peach
+        if (game.dyingInfo[who.id]?.dying) {
+            const tao = cards.find(c => c.id === 'tao');
+            if (tao) {
+                game.playCard(who, tao);
+                return;
+            }
+        }
+
         let bestCard = null;
 
         if (Math.random() < 0.3) {

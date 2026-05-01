@@ -200,6 +200,11 @@ class Game {
     }
 
     playCard(who, card, target = null) {
+        if (this.dyingInfo[who.id]?.dying && card.id !== 'tao') {
+            showMessage(`${who.name} 处于濒死状态，只能使用桃！`);
+            return;
+        }
+
         this.lastPlayed = { card, player: who };
         this.discardPile.push(card);
 

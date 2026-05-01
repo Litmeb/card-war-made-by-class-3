@@ -476,10 +476,16 @@ function updateHandCards() {
     if (isIndependent) {
         con.innerHTML = '<span style="color:#a18cd1;font-size:16px;font-weight:600">🌀 独立主格中，等待恢复...</span>';
     } else {
+        const isDying = game.dyingInfo['player']?.dying;
         cards.forEach(card => {
             const el = createCardElement(card);
-            if (!canPlay) el.classList.add('disabled');
-            else el.addEventListener('click', () => {
+            let disabled = !canPlay;
+            if (isDying && card.id !== 'tao') disabled = true;
+
+            if (disabled) {
+                el.classList.add('disabled');
+            } else {
+                el.addEventListener('click', () => {
                 if (card.armor) {
                     game.playCard(player, card);
                 } else if (card.singleTarget) {
