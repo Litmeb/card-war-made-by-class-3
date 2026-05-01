@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-rules').addEventListener('click', () => showScreen('rules'));
     document.getElementById('btn-back').addEventListener('click', () => showScreen('start'));
     document.getElementById('btn-restart').addEventListener('click', restartGame);
+    document.getElementById('btn-flee').addEventListener('click', () => {
+        if (confirm('确定要逃跑吗？')) {
+            fleeGame();
+        }
+    });
     document.getElementById('btn-end-turn').addEventListener('click', () => {
         const p = game.players.find(pl => pl.id === 'player');
         if (p) game.endTurnAfterCard(p);
@@ -47,14 +52,25 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function showScreen(name) {
-    Object.values(screens).forEach(s => s?.classList.remove('active'));
-    if (screens[name]) screens[name].classList.add('active');
+    Object.values(screens).forEach(s => {
+        s?.classList.remove('active');
+        s.style.zIndex = '';
+    });
+    if (screens[name]) {
+        screens[name].classList.add('active');
+        screens[name].style.zIndex = '10';
+    }
 }
 
 function startGame() {
+    game = new Game();
     game.init(parseInt(document.getElementById('ai-count').value));
     game.autoRPS = document.getElementById('auto-rps-toggle').checked;
     game.adminMode = document.getElementById('admin-mode-toggle').checked;
+    duelState = null;
+    activeCardCategory = 'all';
+    document.getElementById('rps-zone').style.display = 'none';
+    document.getElementById('duel-inline-zone').style.display = 'none';
     showScreen('game');
     updateUI();
     setTimeout(() => game.startRound(), 500);
@@ -65,6 +81,16 @@ function restartGame() {
     game.autoRPS = document.getElementById('auto-rps-toggle').checked;
     game.adminMode = document.getElementById('admin-mode-toggle').checked;
     showScreen('start');
+}
+
+function fleeGame() {
+    game.isProcessing = false;
+    duelState = null;
+    activeCardCategory = 'all';
+    document.getElementById('rps-zone').style.display = 'none';
+    document.getElementById('duel-inline-zone').style.display = 'none';
+    showMessage('你已逃跑');
+    setTimeout(() => showScreen('start'), 1000);
 }
 
 function handleRPSResult(playerChoice) {
@@ -504,6 +530,11 @@ function updateHandCards() {
     if (endBtn) {
         const canEndTurn = canPlay && !game.pendingTarget;
         endBtn.style.display = canEndTurn ? 'inline-block' : 'none';
+    }
+
+    const fleeBtn = document.getElementById('btn-flee');
+    if (fleeBtn) {
+        fleeBtn.style.display = (canPlay || game.phase === 'rps' || duelState) ? 'inline-block' : 'none';
     }
 
     let cancelBtn = document.getElementById('btn-cancel-target');

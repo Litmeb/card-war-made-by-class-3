@@ -355,6 +355,15 @@ body {
     background: var(--primary-dark);
 }
 
+.btn-flee {
+    background: #ff6b6b;
+    color: white;
+}
+
+.btn-flee:hover {
+    background: #e55c5c;
+}
+
 .player-area {
     background: rgba(255, 255, 255, 0.8);
     border-radius: var(--border-radius);
