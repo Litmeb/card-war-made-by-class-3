@@ -32,6 +32,10 @@ class AI {
                 const spec = cards.filter(c => c.duel || c.quantum);
                 if (spec.length > 0) bestCard = spec[Math.floor(Math.random() * spec.length)];
             }
+            if (!bestCard && !who.armor && Math.random() < 0.4) {
+                const eq = cards.filter(c => c.armor);
+                if (eq.length > 0) bestCard = eq[Math.floor(Math.random() * eq.length)];
+            }
         }
 
         if (!bestCard) bestCard = cards[Math.floor(Math.random() * cards.length)];

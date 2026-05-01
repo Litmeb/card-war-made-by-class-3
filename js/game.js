@@ -28,13 +28,13 @@ class Game {
         this.players = [];
         this.players.push({
             id: 'player', name: '你', hp: 5, maxHp: 5, alive: true,
-            hasWine: false, independentRounds: 0
+            hasWine: false, independentRounds: 0, armor: null
         });
 
         for (let i = 0; i < aiCount; i++) {
             this.players.push({
                 id: `ai_${i}`, name: `AI${i + 1}`, hp: 5, maxHp: 5, alive: true,
-                hasWine: false, independentRounds: 0
+                hasWine: false, independentRounds: 0, armor: null
             });
         }
     }
@@ -246,6 +246,12 @@ class Game {
             return;
         }
 
+        if (card.armor) {
+            who.armor = card;
+            showMessage(`${who.name} 装备【${card.name}】`);
+            updateUI(); this.endTurnAfterCard(who); return;
+        }
+
         if (card.heal) {
             who.hp += card.heal;
             showMessage(`${who.name} 使用【${card.name}】，恢复${card.heal}点体力`);
@@ -265,17 +271,32 @@ class Game {
             if (who.hasWine) { dmg += 1; who.hasWine = false; }
 
             if (card.aoe) {
-                this.getAlivePlayers().forEach(p => {
-                    if (p.id !== who.id && p.independentRounds <= 0) {
-                        p.hp -= dmg; this.applyHpMod(p); this.checkDying(p);
+                const targets = this.getAlivePlayers().filter(p => p.id !== who.id && p.independentRounds <= 0);
+                targets.forEach(p => {
+                    let finalDmg = dmg;
+                    if (p.armor && card.id === 'nanman') {
+                        showMessage(`${p.name} 的【藤甲】免疫了南蛮入侵！`);
+                        return;
                     }
+                    if (p.armor && card.fire) finalDmg += 1;
+                    p.hp -= finalDmg; this.applyHpMod(p); this.checkDying(p);
                 });
                 showMessage(`${who.name} 使用【${card.name}】，所有其他角色受到${dmg}点伤害`);
             } else {
                 const t = target || this.selectRandomTarget(who);
                 if (t) {
-                    t.hp -= dmg;
-                    showMessage(`${who.name} 使用【${card.name}】，${t.name} 受到${dmg}点伤害！`);
+                    let finalDmg = dmg;
+                    if (t.armor && card.id === 'sha') {
+                        showMessage(`${t.name} 的【藤甲】免疫了杀！`);
+                        finalDmg = 0;
+                    }
+                    if (t.armor && card.fire) finalDmg += 1;
+                    if (finalDmg > 0) {
+                        t.hp -= finalDmg;
+                        showMessage(`${who.name} 使用【${card.name}】，${t.name} 受到${finalDmg}点伤害！`);
+                    } else {
+                        showMessage(`${who.name} 使用【${card.name}】，${t.name} 被藤甲免疫！`);
+                    }
                     this.applyHpMod(t); this.checkDying(t);
                 }
             }

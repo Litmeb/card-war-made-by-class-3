@@ -257,6 +257,7 @@ function updatePlayersUI() {
             <div class="ai-admin-end-turn"><button class="btn-action btn-end-turn-ai" data-ai-id="${p.id}">结束回合</button></div>`;
         }
 
+        const armorDisplay = p.armor ? `<span class="armor-status">${p.armor.emoji}${p.armor.name}</span>` : '';
         area.innerHTML = `
             <div class="ai-player-info">
                 <div class="ai-avatar">🤖</div>
@@ -266,6 +267,7 @@ function updatePlayersUI() {
                         ${Array.from({length: 9}, (_, i) => `<div class="health-pip ${i >= Math.max(0, p.hp) ? 'empty' : ''}"></div>`).join('')}
                         <span class="hp-text">${p.hp}</span>
                         <span class="wine-status">${wine}${dying}</span>
+                        ${armorDisplay}
                     </div>
                 </div>
             </div>
@@ -340,6 +342,7 @@ function updatePlayersUI() {
     const wine = document.getElementById('player-wine'); if (wine) wine.textContent = player.hasWine ? '🍶' : '';
     const indep = document.getElementById('player-independent'); if (indep) indep.textContent = player.independentRounds > 0 ? '🌀独立' : '';
     const dying = document.getElementById('player-dying'); if (dying) dying.textContent = game.dyingInfo['player']?.dying ? '💀濒死' : '';
+    const armor = document.getElementById('player-armor'); if (armor) armor.textContent = player.armor ? `${player.armor.emoji}${player.armor.name}` : '';
 }
 
 function updatePlayArea() {
@@ -353,6 +356,8 @@ function updatePlayArea() {
     }
 }
 
+let activeCardCategory = 'all';
+
 function updateHandCards() {
     const con = document.getElementById('hand-cards'); if (!con) return; con.innerHTML = '';
     const player = game.players.find(p => p.id === 'player');
@@ -361,14 +366,45 @@ function updateHandCards() {
     const isIndependent = player.independentRounds > 0;
     const canPlay = game.phase === 'player_turn' && !isIndependent;
 
+    let catBar = document.getElementById('card-category-bar');
+    if (!catBar) {
+        catBar = document.createElement('div');
+        catBar.id = 'card-category-bar';
+        catBar.className = 'card-category-bar';
+        ['all', 'basic', 'trick', 'equipment'].forEach(cat => {
+            const btn = document.createElement('button');
+            btn.className = `cat-btn ${cat === 'all' ? 'active' : ''}`;
+            btn.dataset.category = cat;
+            const labels = { all: '全部', basic: '基础卡', trick: '锦囊卡', equipment: '装备卡' };
+            btn.textContent = labels[cat];
+            btn.addEventListener('click', () => {
+                activeCardCategory = cat;
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateHandCards();
+            });
+            catBar.appendChild(btn);
+        });
+        con.parentNode.insertBefore(catBar, con);
+    }
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.category === activeCardCategory);
+    });
+
+    const cards = activeCardCategory === 'all' ? CARD_TYPES :
+        activeCardCategory === 'basic' ? BASIC_CARDS :
+        activeCardCategory === 'trick' ? TRICK_CARDS : EQUIPMENT_CARDS;
+
     if (isIndependent) {
         con.innerHTML = '<span style="color:#a18cd1;font-size:16px;font-weight:600">🌀 独立主格中，等待恢复...</span>';
     } else {
-        CARD_TYPES.forEach(card => {
+        cards.forEach(card => {
             const el = createCardElement(card);
             if (!canPlay) el.classList.add('disabled');
             else el.addEventListener('click', () => {
-                if (card.singleTarget) {
+                if (card.armor) {
+                    game.playCard(player, card);
+                } else if (card.singleTarget) {
                     game.pendingTarget = { card, who: player };
                     showMessage(`点击选择【${card.name}】的目标`);
                     updateUI();
